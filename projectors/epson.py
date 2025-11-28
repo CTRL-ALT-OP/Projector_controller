@@ -26,15 +26,98 @@ commands = {
         "default_kjoiner": "&",
         "params": [["KEY", "3B"], ["_", "$$time"]],
     },
+    # Cycle / toggle keys from the original Epson remote protocol
+    "OTHER": {  # Computer (cycle between 1 and 2)
+        "type": "source_cycle",
+        "mode": "get",
+        "duplicate": False,
+        "path": "/cgi-bin/directsend?",
+        "default_kvjoiner": "=",
+        "default_kjoiner": "&",
+        "params": [["KEY", "43"], ["_", "$$time"]],
+    },
+    "VIDEO": {  # HDMI1, HDMI2, S-Video, Video
+        "type": "source_cycle",
+        "mode": "get",
+        "duplicate": False,
+        "path": "/cgi-bin/directsend?",
+        "default_kvjoiner": "=",
+        "default_kjoiner": "&",
+        "params": [["KEY", "46"], ["_", "$$time"]],
+    },
+    "USB": {  # USB display, USB
+        "type": "source_cycle",
+        "mode": "get",
+        "duplicate": False,
+        "path": "/cgi-bin/directsend?",
+        "default_kvjoiner": "=",
+        "default_kjoiner": "&",
+        "params": [["KEY", "85"], ["_", "$$time"]],
+    },
+    "LAN": {
+        "type": "source_cycle",
+        "mode": "get",
+        "duplicate": False,
+        "path": "/cgi-bin/directsend?",
+        "default_kvjoiner": "=",
+        "default_kjoiner": "&",
+        "params": [["KEY", "8A"], ["_", "$$time"]],
+    },
+    "BLANK": {
+        "type": "toggle",
+        "mode": "get",
+        "duplicate": False,
+        "path": "/cgi-bin/directsend?",
+        "default_kvjoiner": "=",
+        "default_kjoiner": "&",
+        "params": [["KEY", "3E"], ["_", "$$time"]],
+    },
+    "FREEZE": {
+        "type": "toggle",
+        "mode": "get",
+        "duplicate": False,
+        "path": "/cgi-bin/directsend?",
+        "default_kvjoiner": "=",
+        "default_kjoiner": "&",
+        "params": [["KEY", "47"], ["_", "$$time"]],
+    },
+    "SEARCH": {
+        "type": "action",
+        "mode": "get",
+        "duplicate": False,
+        "path": "/cgi-bin/directsend?",
+        "default_kvjoiner": "=",
+        "default_kjoiner": "&",
+        "params": [["KEY", "67"], ["_", "$$time"]],
+    },
 }
 
-"""OTHER: Computer (cycle between 1 and 2) : 43
-Video (cycle between HDMI1, HDMI2, S-Video, Video) : 46
-USB (cycle between USB display and USB): 85
-LAN : 8A
-Blank (cycle between off/on) : 3E
-Freeze (cycle between off/on) : 47
-Search : 67"""
+# Mapping from human-readable source names (as returned by request_source)
+# to the cycle command that should be used to reach them.
+TARGET_TO_CYCLE_COMMAND = {
+    # Video sources
+    "HDMI1": "VIDEO",
+    "HDMI 1": "VIDEO",
+    "HDMI2": "VIDEO",
+    "HDMI 2": "VIDEO",
+    "S-Video": "VIDEO",
+    "SVIDEO": "VIDEO",
+    "Video": "VIDEO",
+    "VIDEO": "VIDEO",
+    # Computer sources
+    "Computer1": "OTHER",
+    "Computer 1": "OTHER",
+    "COMPUTER1": "OTHER",
+    "Computer2": "OTHER",
+    "Computer 2": "OTHER",
+    "COMPUTER2": "OTHER",
+    # USB sources
+    "USB": "USB",
+    "USB Display": "USB",
+    "USBDISPLAY": "USB",
+    # Network
+    "LAN": "LAN",
+}
 
 
 def request_status(user, password, ip):
