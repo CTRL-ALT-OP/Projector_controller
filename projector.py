@@ -27,33 +27,30 @@ class Projector:
         url = url.strip(command["default_kjoiner"])
         return url, command["mode"], command["duplicate"]
 
-    def on(self):
-        url, mode, duplicate = self.generate_command("power_on")
+    def _execute_command(self, command_name):
+        """
+        Execute a low-level command defined in the projector library.
+        Handles GET/POST and duplicate-send semantics.
+        """
+        url, mode, duplicate = self.generate_command(command_name)
 
         if mode == "get":
             caller = requests.get
         else:
             caller = requests.post
 
-        caller(url, headers=self.projector_lib.req_headers)
+        response = caller(url, headers=self.projector_lib.req_headers)
         if duplicate:
             time.sleep(0.5)
-            url, _, _ = self.generate_command("power_on")
-            caller(url, headers=self.projector_lib.req_headers)
+            url, _, _ = self.generate_command(command_name)
+            response = caller(url, headers=self.projector_lib.req_headers)
+        return response
+
+    def on(self):
+        self._execute_command("power_on")
 
     def off(self):
-        url, mode, duplicate = self.generate_command("power_off")
-
-        if mode == "get":
-            caller = requests.get
-        else:
-            caller = requests.post
-
-        x = caller(url, headers=self.projector_lib.req_headers)
-        if duplicate:
-            time.sleep(0.5)
-            url, _, _ = self.generate_command("power_off")
-            caller(url, headers=self.projector_lib.req_headers)
+        self._execute_command("power_off")
 
     def status(self):
         ip = self.ip
@@ -66,6 +63,67 @@ class Projector:
         user = self.projector_lib.default_login["username"]
         password = self.projector_lib.default_login["password"]
         return self.projector_lib.request_source(user, password, ip)
+
+    def toggle(self, command_name):
+        """
+        Generic helper for toggle-style commands like MUTE, BLANK, FREEZE, etc.
+        """
+        if command_name not in self.projector_lib.commands:
+            raise ValueError(
+                f"Unknown command '{command_name}' for projector type {self.projector_type}"
+            )
+        self._execute_command(command_name)
+
+    def set_source(self, target_source, max_attempts=12):
+        """
+        Set the projector to a given source.
+
+        For projectors that expose cycle-based source selection (e.g. Epson with
+        VIDEO/OTHER/USB/LAN keys), we:
+          - look up which cycle key to use based on the requested source
+          - repeatedly send that key, checking request_source() after each press,
+            until we reach the desired source or hit max_attempts.
+
+        For projectors that support direct source commands (e.g. Christie with
+        HDMI1, HDMI2, HDBASET, etc.), we call the appropriate direct command.
+        """
+        current = self.source()
+        if current == target_source:
+            return True
+
+        # First, try cycle-based sources if this projector exposes a mapping
+        cycle_map = getattr(self.projector_lib, "TARGET_TO_CYCLE_COMMAND", {})
+        cycle_cmd = cycle_map.get(target_source)
+        if cycle_cmd is not None:
+            for _ in range(max_attempts):
+                # Re-check current source each loop; bail early if we've reached target
+                current = self.source()
+                if current == target_source:
+                    return True
+                self._execute_command(cycle_cmd)
+                time.sleep(0.5)
+
+            # Final check after last press
+            if self.source() == target_source:
+                return True
+            return False
+
+        # Otherwise, fall back to direct source commands where available
+        name_map = {
+            "HDMI 1": "HDMI1",
+            "HDMI 2": "HDMI2",
+            "HDBaseT": "HDBASET",
+            "Computer 1": "COMPUTER1",
+        }
+        command_name = name_map.get(target_source, target_source)
+
+        if command_name not in self.projector_lib.commands:
+            raise ValueError(
+                f"Cannot set source '{target_source}' for projector type {self.projector_type}"
+            )
+
+        self._execute_command(command_name)
+        return True
 
 
 proj = Projector("192.168.0.28", "christie")
