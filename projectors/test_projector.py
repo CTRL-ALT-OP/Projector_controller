@@ -192,7 +192,7 @@ def handle_command(command_name: str, projector_instance) -> None:
     """
     global _POWER_ON, _FEATURES
 
-    root_time.sleep(1)
+    root_time.sleep(0.5)
     if command_name == "power_on":
         _POWER_ON = True
         # Keep whatever source was last chosen
