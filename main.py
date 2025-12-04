@@ -1,6 +1,6 @@
 import contextlib
 import json
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import nebulatk as ntk
 
@@ -27,6 +27,37 @@ BUTTON_WIDTH = ((FRAME_WIDTH - 70) / 4) - BUTTON_SPACING
 BUTTON_HEIGHT = 30
 
 
+class LoadingIndicator:
+    """
+    Simple reference-counted loading indicator controller.
+    Shows the provided label while one or more commands are active.
+    """
+
+    def __init__(self, label: ntk.Label, root, place_kwargs: Optional[Dict] = None):
+        self.label = label
+        self.root = root
+        self._active = 0
+        self._place_kwargs = place_kwargs or {}
+
+    def __enter__(self):
+        print("entering loading context")
+        self._active += 1
+        if self._active == 1:
+            if self._place_kwargs:
+                self.label.place(**self._place_kwargs)
+            self.label.show()
+            self.label.update()
+            self.label.master.update()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        if self._active > 0:
+            self._active -= 1
+        if self._active == 0:
+            self.label.hide()
+        return False
+
+
 class ProjectorControllerFrame(ntk.Frame):
     """
     One UI controller for a single projector.
@@ -38,11 +69,18 @@ class ProjectorControllerFrame(ntk.Frame):
       - Power button (icon), reflecting initial power state
     """
 
-    def __init__(self, master, proj: Projector, meta: Dict, *args, **kwargs):
+    def __init__(
+        self,
+        master,
+        proj: Projector,
+        meta: Dict,
+        *args,
+        **kwargs,
+    ):
         super().__init__(master, fill=FRAME_BACKGROUND, *args, **kwargs)
-        self.hide()
         self.proj = proj
         self.meta = meta
+        self.loading_indicator = None
 
         # Pre-load power icon images (off/on with hover variants)
         self.power_icon_off = ntk.image_manager.Image("images/power.png")
@@ -56,6 +94,7 @@ class ProjectorControllerFrame(ntk.Frame):
         self.power_icon_on_hover.recolor(ACCENT_COLOR_HOVER)
 
         self._build_ui()
+        self._configure_loading_overlay()
         self._sync_initial_state()
 
     # ------------------------------------------------------------------ UI
@@ -112,7 +151,25 @@ class ProjectorControllerFrame(ntk.Frame):
 
         self.height = y + 40
 
-        self._update_children()
+    def _configure_loading_overlay(self):
+        overlay_place = {"x": 0, "y": 0}
+        overlay_height = getattr(self, "height", FRAME_HEIGHT)
+        self.loading_label = ntk.Label(
+            self,
+            text="Loading...",
+            font=("Arial", 20, "bold"),
+            text_color=TEXT_COLOR,
+            fill=f"{WINDOW_BACKGROUND}8F",
+            width=FRAME_WIDTH,
+            height=overlay_height,
+        )
+        self.loading_label.place(**overlay_place)
+        self.loading_label.hide()
+        self.loading_indicator = LoadingIndicator(
+            self.loading_label,
+            self.master.root,
+            place_kwargs=overlay_place,
+        )
 
     def _build_sources_section(self, y_start: int):
         # Sources are commands where type == "source" or "source_cycle"
@@ -140,20 +197,22 @@ class ProjectorControllerFrame(ntk.Frame):
 
             def make_handler(command_name: str):
                 def handler():
-                    # Use high-level set_source where possible so Epson
-                    # cycle keys behave as expected for human labels.
-                    try:
-                        self.proj.set_source(command_name)
-                        self._radio_switch(btn)
-                    except Exception:
-                        # Fallback to raw command if mapping fails
+                    print("handler called")
+                    with self._loading_context():
+                        # Use high-level set_source where possible so Epson
+                        # cycle keys behave as expected for human labels.
                         try:
-                            self.proj.toggle(command_name)
+                            self.proj.set_source(command_name)
                             self._radio_switch(btn)
-                        except Exception as e:
-                            btn.state = True
-                            ntk.standard_methods.toggle_object_toggle(btn)
-                            print(e, "reached iamanexception")
+                        except Exception:
+                            # Fallback to raw command if mapping fails
+                            try:
+                                self.proj.toggle(command_name)
+                                self._radio_switch(btn)
+                            except Exception as e:
+                                btn.state = True
+                                ntk.standard_methods.toggle_object_toggle(btn)
+                                print(e, "reached iamanexception")
 
                 return handler
 
@@ -218,11 +277,12 @@ class ProjectorControllerFrame(ntk.Frame):
 
             def make_handler(command_name: str):
                 def handler():
-                    try:
-                        self.proj.toggle(command_name)
-                    except Exception as e:
-                        print(e, "iamanexception")
-                        ntk.standard_methods.toggle_object_toggle(btn)
+                    with self._loading_context():
+                        try:
+                            self.proj.toggle(command_name)
+                        except Exception as e:
+                            print(e, "iamanexception")
+                            ntk.standard_methods.toggle_object_toggle(btn)
 
                 return handler
 
@@ -247,13 +307,14 @@ class ProjectorControllerFrame(ntk.Frame):
         )
 
         def on_power():
-            # Button's active state determines desired power
-            if self.power_button.state:
-                self.proj.on()
-            else:
-                self.proj.off()
+            with self._loading_context():
+                # Button's active state determines desired power
+                if self.power_button.state:
+                    self.proj.on()
+                else:
+                    self.proj.off()
 
-            self._sync_initial_state()
+                self._sync_initial_state()
 
         self.power_button.command = on_power
         self.power_button.place(x=x_right - size, y=y_center - size // 2)
@@ -288,6 +349,9 @@ class ProjectorControllerFrame(ntk.Frame):
                     self._radio_switch(button)
                     break
 
+    def _loading_context(self):
+        return self.loading_indicator or contextlib.nullcontext()
+
 
 def load_projectors_from_json(path: str = "data.json") -> List[Dict]:
     with open(path, "r", encoding="utf-8") as f:
@@ -305,38 +369,6 @@ def create_app():
     frame_height = FRAME_HEIGHT
     window_height = max(frame_height * len(projector_defs), frame_height)
     window_width = WINDOW_WIDTH
-
-    window = ntk.Window(
-        title="Projector Controller", width=window_width, height=window_height
-    )
-
-    background = ntk.Frame(
-        window, fill=WINDOW_BACKGROUND, width=window_width, height=window_height
-    )
-    background.place()
-
-    for idx, meta in enumerate(projector_defs):
-        ip = meta["ip"]
-        proj_type = meta["projector_type"]
-
-        proj = Projector(ip, proj_type)
-
-        frame = ProjectorControllerFrame(
-            background,
-            proj,
-            meta,
-            width=FRAME_WIDTH,
-            height=FRAME_HEIGHT,
-        )
-        frames.append(frame)
-        window_height += frame.height - FRAME_HEIGHT + FRAME_SPACING * 2
-
-        window.resize(window_width, window_height)
-        background.configure(height=window_height)
-        frame.place(
-            x=FRAME_SPACING, y=FRAME_SPACING + idx * (FRAME_HEIGHT + FRAME_SPACING)
-        )
-        frame.show()
 
     def _save_names_and_close():
         """
@@ -365,11 +397,46 @@ def create_app():
         with contextlib.suppress(Exception):
             with open("data.json", "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
-        window.root.destroy()
 
-    # Ensure that closing the window saves any edited names.
-    with contextlib.suppress(Exception):
-        window.root.protocol("WM_DELETE_WINDOW", _save_names_and_close)
+    window = ntk.Window(
+        title="Projector Controller",
+        width=window_width,
+        height=window_height,
+        closing_command=_save_names_and_close,
+    )
+    window.updates_all = False
+
+    background = ntk.Frame(
+        window,
+        fill=WINDOW_BACKGROUND,
+        width=window_width,
+        height=window_height,
+    )
+    background.place()
+
+    for idx, meta in enumerate(projector_defs):
+        print("creating frame for", meta["name"])
+        ip = meta["ip"]
+        proj_type = meta["projector_type"]
+
+        proj = Projector(ip, proj_type)
+
+        frame = ProjectorControllerFrame(
+            background,
+            proj,
+            meta,
+            width=FRAME_WIDTH,
+            height=FRAME_HEIGHT,
+        )
+        frames.append(frame)
+        window_height += frame.height - FRAME_HEIGHT + FRAME_SPACING * 2
+
+        frame.place(
+            x=FRAME_SPACING, y=FRAME_SPACING + idx * (FRAME_HEIGHT + FRAME_SPACING)
+        )
+        # Ensure that closing the window saves any edited names.
+    background.configure(height=window_height)
+    window.resize(window_width, window_height)
     return window
 
 
