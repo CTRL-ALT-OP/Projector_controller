@@ -33,14 +33,14 @@ class ProjectorControllerFrame(ntk.Frame):
         self.meta = meta
 
         # Pre-load power icon images (off/on with hover variants)
-        self.power_icon_off = ntk.image_manager.Image("power.png")
+        self.power_icon_off = ntk.image_manager.Image("images/power.png")
         self.power_icon_off.recolor(DISABLED_COLOR)
-        self.power_icon_off_hover = ntk.image_manager.Image("power.png")
+        self.power_icon_off_hover = ntk.image_manager.Image("images/power.png")
         self.power_icon_off_hover.recolor(DISABLED_COLOR_HOVER)
 
-        self.power_icon_on = ntk.image_manager.Image("power.png")
+        self.power_icon_on = ntk.image_manager.Image("images/power.png")
         self.power_icon_on.recolor(ACCENT_COLOR)
-        self.power_icon_on_hover = ntk.image_manager.Image("power.png")
+        self.power_icon_on_hover = ntk.image_manager.Image("images/power.png")
         self.power_icon_on_hover.recolor(ACCENT_COLOR_HOVER)
 
         self._build_ui()
@@ -66,10 +66,10 @@ class ProjectorControllerFrame(ntk.Frame):
         self._build_features_section(y_start=y)
 
         # Power button on the right
-        self._build_power_section(x_right=370, y_center=60+((y-70)/2))
+        self._build_power_section(x_right=370, y_center=60 + ((y - 70) / 2))
 
-        self.height=y+40
-        
+        self.height = y + 40
+
         self._update_children()
 
     def _build_sources_section(self, y_start: int):
@@ -80,13 +80,7 @@ class ProjectorControllerFrame(ntk.Frame):
         x = 8
 
         def build_button(x, name, cmd):
-            btn = ntk.Button(
-                self,
-                text=name,
-                font="Arial",
-                width=72,
-                height=24
-            )
+            btn = ntk.Button(self, text=name, font="Arial", width=72, height=24)
 
             def make_handler(command_name: str):
                 def handler():
@@ -99,7 +93,7 @@ class ProjectorControllerFrame(ntk.Frame):
                         try:
                             self.proj.toggle(command_name)
                         except Exception:
-                            print(e,"iamanexception")
+                            print(e, "iamanexception")
 
                 return handler
 
@@ -107,7 +101,7 @@ class ProjectorControllerFrame(ntk.Frame):
             btn.place(x=x, y=y_start)
             self.source_buttons.append(btn)
             return btn
-        
+
         for name, cmd in commands.items():
             if cmd.get("type") not in ("source", "source_cycle"):
                 continue
@@ -115,16 +109,16 @@ class ProjectorControllerFrame(ntk.Frame):
             if cmd.get("type") == "source_cycle":
                 for target in self.proj.get_targets(name):
                     build_button(x, target, cmd)
-                    if x >= 76*3:
+                    if x >= 76 * 3:
                         x = 8
                         y_start += 30
                     else:
                         x += 76
-                    
+
             else:
                 build_button(x, name, cmd)
                 x += 76
-        return y_start+40
+        return y_start + 40
 
     def _build_features_section(self, y_start: int):
         # Features are commands where type == "feature" or "toggle"
@@ -136,20 +130,14 @@ class ProjectorControllerFrame(ntk.Frame):
             if cmd.get("type") not in ("feature", "toggle"):
                 continue
 
-            btn = ntk.Button(
-                self,
-                text=name,
-                font=("Arial", 10),
-                width=72,
-                height=24
-            )
+            btn = ntk.Button(self, text=name, font=("Arial", 10), width=72, height=24)
 
             def make_handler(command_name: str):
                 def handler():
                     try:
                         self.proj.toggle(command_name)
                     except Exception as e:
-                        print(e,"iamanexception")
+                        print(e, "iamanexception")
 
                 return handler
 
@@ -238,16 +226,16 @@ def create_app():
             width=window_width - 16,
             height=frame_height - 8,
         )
-        window_height += frame.height-frame_height+10
+        window_height += frame.height - frame_height + 10
 
         window.root.geometry(f"{window_width}x{window_height}")
         window.canvas.configure(height=window_height)
         window.root.update()
-        background.height=window_height
+        background.height = window_height
         background.update()
         frame.place(x=8, y=8 + idx * frame_height)
         frame.show()
-    
+
     return window
 
 

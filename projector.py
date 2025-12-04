@@ -31,7 +31,16 @@ class Projector:
         """
         Execute a low-level command defined in the projector library.
         Handles GET/POST and duplicate-send semantics.
+
+        If the projector module exposes a custom `handle_command` function
+        (e.g. for an in-process test projector), that is used instead of
+        performing any HTTP requests.
         """
+        # Allow a projector module to fully override command execution.
+        handler = getattr(self.projector_lib, "handle_command", None)
+        if callable(handler):
+            return handler(command_name, self)
+
         url, mode, duplicate = self.generate_command(command_name)
 
         caller = requests.get if mode == "get" else requests.post
@@ -129,14 +138,6 @@ class Projector:
 
         self._execute_command(command_name)
         return True
-
-
-proj = Projector("192.168.0.28", "christie")
-
-print(proj.source())
-"""with open("data.json","w") as f:
-    json.dump(headers, f)
-    """
 
 
 def determine(ip):
