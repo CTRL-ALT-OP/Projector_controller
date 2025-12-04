@@ -37,6 +37,7 @@ class Projector:
         performing any HTTP requests.
         """
         # Allow a projector module to fully override command execution.
+        print(command_name)
         handler = getattr(self.projector_lib, "handle_command", None)
         if callable(handler):
             return handler(command_name, self)

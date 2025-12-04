@@ -9,6 +9,7 @@ projector module (it exposes `commands`, `request_status`,
 
 import time as root_time
 from typing import Dict
+import random
 
 # Kept only so the rest of the app can construct URLs; they are never used
 # for real HTTP traffic when this module is active.
@@ -159,7 +160,7 @@ commands = {
 # Internal simulated state
 # ---------------------------------------------------------------------------
 
-_POWER_ON: bool = False
+_POWER_ON: bool = bool(random.randint(0, 1))
 _CURRENT_SOURCE: str = "HDMI 1"
 _FEATURES: Dict[str, bool] = {
     "FREEZE": False,
@@ -170,6 +171,9 @@ _FEATURES: Dict[str, bool] = {
 
 def _set_source_from_command(command_name: str) -> None:
     global _CURRENT_SOURCE
+    global _POWER_ON
+    if not _POWER_ON:
+        raise Exception("Projector is not powered on")
     if command_name == "HDMI1":
         _CURRENT_SOURCE = "HDMI 1"
     elif command_name == "HDMI2":
