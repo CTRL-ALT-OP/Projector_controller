@@ -64,6 +64,7 @@ def create_projector_app(
         height=window_height,
         closing_command=_save_names_and_close,
     )
+    window.root.iconbitmap("images/icon.ico")
     window.updates_all = False
 
     background = ntk.Frame(

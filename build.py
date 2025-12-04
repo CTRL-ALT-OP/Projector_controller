@@ -18,6 +18,7 @@ DIST_ROOT = ROOT / "dist"
 DIST_MAIN = DIST_ROOT / "main"
 PROJECTORS_DIR = ROOT / "projectors"
 IMAGES_DIR = ROOT / "images"
+ICON_FILE = IMAGES_DIR / "icon.ico"
 UPDATER_DIR = ROOT / "updater"
 VERSION_FILE = ROOT / "version"
 WINDOWS_ZIP = ROOT / "windows.zip"
@@ -26,6 +27,8 @@ UPDATER_FILES = ("data.json", "projector_controller.exe")
 
 
 def run_pyinstaller() -> None:
+    if not ICON_FILE.exists():
+        raise FileNotFoundError(f"Missing application icon: {ICON_FILE}")
     cmd = [
         sys.executable,
         "-m",
@@ -35,6 +38,7 @@ def run_pyinstaller() -> None:
         "--noconfirm",
         "--hidden-import=nebulatk",
         "--additional-hooks-dir=.",
+        f"--icon={ICON_FILE}",
     ]
     print(f"[build] Running PyInstaller: {' '.join(cmd)}")
     subprocess.run(cmd, cwd=ROOT, check=True)

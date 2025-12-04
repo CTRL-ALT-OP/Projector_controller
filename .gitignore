@@ -4,6 +4,7 @@
 !*.py
 *.pyc
 !*.png
+!*.ico
 OLD_*
 dist/
 !.gitignore
