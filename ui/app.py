@@ -63,6 +63,7 @@ def create_projector_app(
         width=window_width,
         height=window_height,
         closing_command=_save_names_and_close,
+        resizable=False,
     )
     window.root.iconbitmap("images/icon.ico")
     window.updates_all = False
