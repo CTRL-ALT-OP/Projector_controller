@@ -41,7 +41,7 @@ class SimpleDropdown(ntk.Frame):
         self.display_label = ntk.Label(
             self,
             text=self._format_value(self.value),
-            font=("Arial", 11),
+            font=("Arial", 13),
             justify="left",
             text_color=ui_constants.TEXT_COLOR,
             fill="#00000000",
@@ -53,7 +53,7 @@ class SimpleDropdown(ntk.Frame):
         self.caret_label = ntk.Label(
             self,
             text="v",
-            font=("Arial", 12, "bold"),
+            font=("Arial", 13, "bold"),
             text_color=ui_constants.TEXT_COLOR,
             fill="#00000000",
         )
@@ -74,7 +74,7 @@ class SimpleDropdown(ntk.Frame):
             label = ntk.Button(
                 self.options_frame,
                 text=self._format_value(option),
-                font=("Arial", 10),
+                font=("Arial", 13),
                 justify="left",
                 fill="#00000000",
                 hover_fill=ui_constants.DISABLED_COLOR_HOVER,
@@ -88,7 +88,7 @@ class SimpleDropdown(ntk.Frame):
             placeholder = ntk.Label(
                 self.options_frame,
                 text="No options",
-                font=("Arial", 10),
+                font=("Arial", 13),
                 justify="left",
                 fill="#00000000",
                 text_color=ui_constants.TEXT_COLOR,

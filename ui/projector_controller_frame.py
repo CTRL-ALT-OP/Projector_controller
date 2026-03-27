@@ -78,7 +78,7 @@ class ProjectorControllerFrame(ntk.Frame):
         self.name_label = ntk.Entry(
             self,
             text=name,
-            font=("Arial", 12, "bold"),
+            font=("Arial", 15, "bold"),
             text_color=ui_constants.TEXT_COLOR,
             fill="#00000000",
         )
@@ -338,8 +338,8 @@ class ProjectorControllerFrame(ntk.Frame):
             fill="#00000088",
             border_width=0,
         )
-        self.settings_backdrop.hide()
         self.settings_backdrop.place(x=0, y=0)
+        self.settings_backdrop.hide()
         self.settings_backdrop.can_click = True
         self.settings_backdrop.command = lambda: self._toggle_settings_panel(False)
 
@@ -371,7 +371,7 @@ class ProjectorControllerFrame(ntk.Frame):
             label = ntk.Label(
                 self.settings_panel,
                 text=label_text,
-                font=("Arial", 10, "bold"),
+                font=("Arial", 12, "bold"),
                 justify="left",
                 text_color=ui_constants.TEXT_COLOR,
                 fill="#00000000",
@@ -381,7 +381,7 @@ class ProjectorControllerFrame(ntk.Frame):
                 self.settings_panel,
                 width=column_width,
                 height=entry_height,
-                font=("Arial", 11),
+                font=("Arial", 13),
                 justify="left",
                 text_color=ui_constants.TEXT_COLOR,
                 fill="#2c2c2c",
@@ -414,7 +414,7 @@ class ProjectorControllerFrame(ntk.Frame):
         dropdown_label = ntk.Label(
             self.settings_panel,
             text="Projector Type",
-            font=("Arial", 10, "bold"),
+            font=("Arial", 12, "bold"),
             justify="left",
             text_color=ui_constants.TEXT_COLOR,
             fill="#00000000",
@@ -470,7 +470,7 @@ class ProjectorControllerFrame(ntk.Frame):
         self.save_settings_button = ntk.Button(
             self.settings_panel,
             text="Save",
-            font=("Arial", 9, "bold"),
+            font=("Arial", 13, "bold"),
             width=75,
             height=16,
             fill=ui_constants.ACCENT_COLOR,
@@ -483,7 +483,7 @@ class ProjectorControllerFrame(ntk.Frame):
         self.cancel_settings_button = ntk.Button(
             self.settings_panel,
             text="Cancel",
-            font=("Arial", 9, "bold"),
+            font=("Arial", 13, "bold"),
             width=75,
             height=16,
             fill=ui_constants.DISABLED_COLOR,
