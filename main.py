@@ -42,4 +42,7 @@ def create_app(data_path: str = "data.json"):
 
 
 if __name__ == "__main__":
+    import multiprocessing
+
+    multiprocessing.freeze_support()
     app = create_app()

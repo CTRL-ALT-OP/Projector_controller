@@ -37,6 +37,8 @@ def run_pyinstaller() -> None:
         "--windowed",
         "--noconfirm",
         "--hidden-import=nebulatk",
+        "--hidden-import=glfw",
+        "--hidden-import=pyopengl",
         "--additional-hooks-dir=.",
         f"--icon={ICON_FILE}",
     ]
