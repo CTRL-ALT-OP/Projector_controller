@@ -2,6 +2,7 @@
 
 import contextlib
 import json
+from pathlib import Path
 from typing import Dict, List
 
 import nebulatk as ntk
@@ -25,6 +26,9 @@ def create_projector_app(
         projector_types: Available projector module names.
         data_path: JSON path used for persisting friendly names.
     """
+    defaults_dark = Path(__file__).with_name("defaults_dark.py")
+    defaults_light = Path(__file__).with_name("defaults_light.py")
+    using_dark_theme = True
 
     # Simple layout: vertical stack of controller frames
     frames = []
@@ -62,15 +66,25 @@ def create_projector_app(
         title="Projector Controller",
         width=window_width,
         height=window_height,
+        defaults_file=str(defaults_dark),
         closing_command=_save_names_and_close,
         resizable=False,
     )
     window.iconbitmap("images/icon.ico")
     window.updates_all = False
 
+    def toggle_theme():
+        nonlocal using_dark_theme
+        using_dark_theme = not using_dark_theme
+        target = defaults_dark if using_dark_theme else defaults_light
+        window.set_defaults(str(target))
+
+    # Expose runtime theme switching to callers.
+    window.toggle_theme = toggle_theme
+
     background = ntk.Frame(
         window,
-        fill=ui_constants.WINDOW_BACKGROUND,
+        style="surface",
         width=window_width,
         height=window_height,
     )

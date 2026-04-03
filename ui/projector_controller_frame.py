@@ -33,7 +33,7 @@ class ProjectorControllerFrame(ntk.Frame):
         *args,
         **kwargs,
     ):
-        super().__init__(master, fill=ui_constants.FRAME_BACKGROUND, *args, **kwargs)
+        super().__init__(master, style="controller_frame", *args, **kwargs)
         self.hide()
         self.proj = proj
         self.meta = meta
@@ -79,7 +79,7 @@ class ProjectorControllerFrame(ntk.Frame):
             self,
             text=name,
             font=("Arial", 15, "bold"),
-            text_color=ui_constants.TEXT_COLOR,
+            text_color="default",
             fill="#00000000",
         )
         self.name_label.place(x=8, y=6)
@@ -146,9 +146,7 @@ class ProjectorControllerFrame(ntk.Frame):
         self.loading_label = ntk.Label(
             self,
             text="Loading...",
-            font=("Arial", 20, "bold"),
-            text_color=ui_constants.TEXT_COLOR,
-            fill=f"{ui_constants.WINDOW_BACKGROUND}8F",
+            style="overlay_label",
             width=ui_constants.FRAME_WIDTH,
             height=overlay_height,
         )
@@ -171,16 +169,10 @@ class ProjectorControllerFrame(ntk.Frame):
             btn = ntk.Button(
                 self,
                 text=name,
+                style="toggle_button",
                 font=("Arial", self.max_font_size, "bold"),
                 width=ui_constants.BUTTON_WIDTH,
                 height=ui_constants.BUTTON_HEIGHT,
-                border=ui_constants.DISABLED_COLOR_HOVER,
-                border_width=2,
-                fill=ui_constants.DISABLED_COLOR,
-                hover_fill=ui_constants.DISABLED_COLOR_HOVER,
-                active_fill=ui_constants.ACCENT_COLOR,
-                active_hover_fill=ui_constants.ACCENT_COLOR_HOVER,
-                text_color=ui_constants.TEXT_COLOR,
                 mode="toggle",
             )
 
@@ -256,16 +248,10 @@ class ProjectorControllerFrame(ntk.Frame):
             btn = ntk.Button(
                 self,
                 text=name,
+                style="toggle_button",
                 font=("Arial", self.max_font_size, "bold"),
                 width=ui_constants.BUTTON_WIDTH,
                 height=ui_constants.BUTTON_HEIGHT,
-                fill=ui_constants.DISABLED_COLOR,
-                border=ui_constants.DISABLED_COLOR_HOVER,
-                border_width=2,
-                hover_fill=ui_constants.DISABLED_COLOR_HOVER,
-                active_fill=ui_constants.ACCENT_COLOR,
-                active_hover_fill=ui_constants.ACCENT_COLOR_HOVER,
-                text_color=ui_constants.TEXT_COLOR,
                 mode="toggle",
             )
 
@@ -335,8 +321,7 @@ class ProjectorControllerFrame(ntk.Frame):
             self,
             width=ui_constants.FRAME_WIDTH,
             height=overlay_height,
-            fill="#00000088",
-            border_width=0,
+            style="settings_backdrop",
         )
         self.settings_backdrop.place(x=0, y=0)
         self.settings_backdrop.hide()
@@ -349,9 +334,7 @@ class ProjectorControllerFrame(ntk.Frame):
             self,
             width=panel_width,
             height=panel_height,
-            fill=ui_constants.SETTINGS_PANEL_FILL,
-            border=ui_constants.SETTINGS_BORDER_COLOR,
-            border_width=2,
+            style="settings_panel",
         )
         panel_x = (ui_constants.FRAME_WIDTH - panel_width) // 2
         panel_y = 0
@@ -373,20 +356,16 @@ class ProjectorControllerFrame(ntk.Frame):
                 text=label_text,
                 font=("Arial", 12, "bold"),
                 justify="left",
-                text_color=ui_constants.TEXT_COLOR,
+                text_color="default",
                 fill="#00000000",
             )
             label.place(x=x, y=y)
             entry = ntk.Entry(
                 self.settings_panel,
+                style="settings_entry",
                 width=column_width,
                 height=entry_height,
-                font=("Arial", 13),
                 justify="left",
-                text_color=ui_constants.TEXT_COLOR,
-                fill="#2c2c2c",
-                border=ui_constants.SETTINGS_BORDER_COLOR,
-                border_width=2,
             )
             entry.place(x=x, y=y + 16)
 
@@ -416,7 +395,7 @@ class ProjectorControllerFrame(ntk.Frame):
             text="Projector Type",
             font=("Arial", 12, "bold"),
             justify="left",
-            text_color=ui_constants.TEXT_COLOR,
+            text_color="default",
             fill="#00000000",
         )
 
@@ -457,10 +436,8 @@ class ProjectorControllerFrame(ntk.Frame):
         self.settings_message_label = ntk.Label(
             self.settings_panel,
             text="",
-            font=("Arial", 10),
+            style="message_error",
             justify="left",
-            text_color=ui_constants.SETTINGS_MESSAGE_COLOR,
-            fill="#00000000",
         )
         message_y = second_row_y + row_height - 6
         self.settings_message_label.place(x=content_x, y=message_y)
@@ -470,12 +447,10 @@ class ProjectorControllerFrame(ntk.Frame):
         self.save_settings_button = ntk.Button(
             self.settings_panel,
             text="Save",
+            style="button_accent",
             font=("Arial", 13, "bold"),
             width=75,
             height=16,
-            fill=ui_constants.ACCENT_COLOR,
-            hover_fill=ui_constants.ACCENT_COLOR_HOVER,
-            text_color=ui_constants.TEXT_COLOR,
         )
         self.save_settings_button.command = self._on_settings_save
         self.save_settings_button.place(x=content_x, y=button_y)
@@ -483,12 +458,10 @@ class ProjectorControllerFrame(ntk.Frame):
         self.cancel_settings_button = ntk.Button(
             self.settings_panel,
             text="Cancel",
+            style="button_neutral",
             font=("Arial", 13, "bold"),
             width=75,
             height=16,
-            fill=ui_constants.DISABLED_COLOR,
-            hover_fill=ui_constants.DISABLED_COLOR_HOVER,
-            text_color=ui_constants.TEXT_COLOR,
         )
         self.cancel_settings_button.command = self._on_settings_cancel
         self.cancel_settings_button.place(x=content_x + 85, y=button_y)
@@ -593,7 +566,7 @@ class ProjectorControllerFrame(ntk.Frame):
             self.settings_message_label.hide()
             return
         color = (
-            ui_constants.SETTINGS_MESSAGE_COLOR if error else ui_constants.ACCENT_COLOR
+            "#d36c6c" if error else "#569e6a"
         )
         self.settings_message_label.configure(text=message, text_color=color)
         self.settings_message_label.show()

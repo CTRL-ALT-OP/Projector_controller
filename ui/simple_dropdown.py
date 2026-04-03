@@ -1,11 +1,8 @@
 """Simple dropdown widget used within projector settings."""
 
-from typing import List, Optional
+from typing import List
 
 import nebulatk as ntk
-
-from . import constants as ui_constants
-
 
 class SimpleDropdown(ntk.Frame):
     """Minimal dropdown built from frames/labels toggled via show/hide."""
@@ -24,9 +21,7 @@ class SimpleDropdown(ntk.Frame):
             master,
             width=width,
             height=height,
-            fill=ui_constants.DISABLED_COLOR,
-            border=ui_constants.DISABLED_COLOR_HOVER,
-            border_width=2,
+            style="settings_dropdown",
         )
         self.password_entry = password_entry
         self.can_hover = True
@@ -43,7 +38,7 @@ class SimpleDropdown(ntk.Frame):
             text=self._format_value(self.value),
             font=("Arial", 13),
             justify="left",
-            text_color=ui_constants.TEXT_COLOR,
+            text_color="default",
             fill="#00000000",
         )
         self.display_label.place(x=8, y=2)
@@ -54,7 +49,7 @@ class SimpleDropdown(ntk.Frame):
             self,
             text="v",
             font=("Arial", 13, "bold"),
-            text_color=ui_constants.TEXT_COLOR,
+            text_color="default",
             fill="#00000000",
         )
         self.caret_label.place(x=width - 20, y=2)
@@ -65,20 +60,16 @@ class SimpleDropdown(ntk.Frame):
             master,
             width=width,
             height=self.option_height * max(1, len(self.options)),
-            fill=ui_constants.SETTINGS_PANEL_FILL,
-            border=ui_constants.SETTINGS_BORDER_COLOR,
-            border_width=2,
+            style="settings_dropdown_list",
         )
         self.option_labels: List[ntk.Label] = []
         for idx, option in enumerate(self.options):
             label = ntk.Button(
                 self.options_frame,
                 text=self._format_value(option),
+                style="dropdown_option",
                 font=("Arial", 13),
                 justify="left",
-                fill="#00000000",
-                hover_fill=ui_constants.DISABLED_COLOR_HOVER,
-                text_color=ui_constants.TEXT_COLOR,
                 width=width - 16,
             )
             label.place(x=8, y=idx * self.option_height + 2)
@@ -91,7 +82,7 @@ class SimpleDropdown(ntk.Frame):
                 font=("Arial", 13),
                 justify="left",
                 fill="#00000000",
-                text_color=ui_constants.TEXT_COLOR,
+                text_color="default",
             )
             placeholder.place(x=8, y=6)
             self.option_labels.append(placeholder)
