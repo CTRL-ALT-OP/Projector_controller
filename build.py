@@ -18,12 +18,14 @@ DIST_ROOT = ROOT / "dist"
 DIST_MAIN = DIST_ROOT / "main"
 PROJECTORS_DIR = ROOT / "projectors"
 IMAGES_DIR = ROOT / "images"
+UI_DIR = ROOT / "ui"
 ICON_FILE = IMAGES_DIR / "icon.ico"
 UPDATER_DIR = ROOT / "updater"
 VERSION_FILE = ROOT / "version"
 WINDOWS_ZIP = ROOT / "windows.zip"
 WINDOWS_AUTO_ZIP = ROOT / "windows_autoupdating.zip"
 UPDATER_FILES = ("data.json", "Projector_Control.exe")
+UI_DEFAULT_FILES = ("defaults_dark.py", "defaults_light.py")
 
 
 def run_pyinstaller() -> None:
@@ -64,6 +66,10 @@ def stage_runtime_assets() -> None:
     internal_projectors = DIST_MAIN / "_internal" / "projectors"
     internal_projectors.parent.mkdir(parents=True, exist_ok=True)
     copy_tree(PROJECTORS_DIR, internal_projectors)
+    internal_ui = DIST_MAIN / "_internal" / "ui"
+    internal_ui.mkdir(parents=True, exist_ok=True)
+    for file_name in UI_DEFAULT_FILES:
+        shutil.copy2(UI_DIR / file_name, internal_ui / file_name)
     copy_tree(IMAGES_DIR, DIST_MAIN / "images")
 
 
