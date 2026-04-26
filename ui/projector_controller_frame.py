@@ -162,8 +162,11 @@ class ProjectorControllerFrame(ntk.Frame):
         # Sources are commands where type == "source" or "source_cycle"
         commands = self.proj.projector_lib.commands
         self.source_buttons = []
-
-        x = 8
+        max_columns = 4
+        x_start = ui_constants.FRAME_SPACING
+        x_step = ui_constants.BUTTON_SPACING + ui_constants.BUTTON_WIDTH
+        y_step = ui_constants.BUTTON_SPACING + ui_constants.BUTTON_HEIGHT
+        source_count = 0
 
         def build_button(x, name, cmd):
             btn = ntk.Button(
@@ -198,7 +201,9 @@ class ProjectorControllerFrame(ntk.Frame):
                 return handler
 
             btn.command = make_handler(name)
-            btn.place(x=x, y=y_start)
+            row = source_count // max_columns
+            y = y_start + row * y_step
+            btn.place(x=x, y=y)
             self.source_buttons.append(btn)
             return btn
 
@@ -208,22 +213,21 @@ class ProjectorControllerFrame(ntk.Frame):
 
             if cmd.get("type") == "source_cycle":
                 for target in self.proj.get_targets(name):
+                    column = source_count % max_columns
+                    x = x_start + column * x_step
                     build_button(x, target, cmd)
-                    if (
-                        x
-                        >= (ui_constants.BUTTON_SPACING + ui_constants.BUTTON_WIDTH) * 3
-                    ):
-                        x = ui_constants.FRAME_SPACING
-                        y_start += (
-                            ui_constants.BUTTON_SPACING + ui_constants.BUTTON_HEIGHT
-                        )
-                    else:
-                        x += ui_constants.BUTTON_SPACING + ui_constants.BUTTON_WIDTH
+                    source_count += 1
 
             else:
+                column = source_count % max_columns
+                x = x_start + column * x_step
                 build_button(x, name, cmd)
-                x += ui_constants.BUTTON_SPACING + ui_constants.BUTTON_WIDTH
-        return y_start + ui_constants.BUTTON_SPACING + ui_constants.BUTTON_HEIGHT
+                source_count += 1
+        if source_count == 0:
+            rows = 0
+        else:
+            rows = ((source_count - 1) // max_columns) + 1
+        return y_start + rows * y_step
 
     def _radio_switch(self, new_active_button: ntk.Button):
         for button in self.source_buttons:
