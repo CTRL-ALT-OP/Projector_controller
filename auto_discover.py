@@ -4,6 +4,7 @@ import pkgutil
 from typing import Dict, List, Optional, Tuple
 
 import requests
+from requests.auth import HTTPDigestAuth
 
 
 PROJECTORS_PACKAGE = "projectors"
@@ -85,6 +86,7 @@ def _probe_projector_type(
     control_page = getattr(module, "control_page", None)
     default_login = getattr(module, "default_login", None)
     req_headers = getattr(module, "req_headers", {})
+    auth_mode = getattr(module, "auth_mode", "url_credentials")
 
     if control_page is None or default_login is None:
         return None
@@ -116,9 +118,21 @@ def _probe_projector_type(
 
     # If we get a 401, try again using the module's default credentials.
     if r.status_code == 401:
-        auth_url = f"http://{username}:{password}@{ip}{control_page}"
         try:
-            r_auth = requests.get(auth_url, timeout=PROBE_TIMEOUT, headers=headers)
+            if auth_mode == "digest":
+                r_auth = requests.get(
+                    control_url,
+                    timeout=PROBE_TIMEOUT,
+                    headers=headers,
+                    auth=HTTPDigestAuth(username, password),
+                )
+            else:
+                auth_url = f"http://{username}:{password}@{ip}{control_page}"
+                r_auth = requests.get(
+                    auth_url,
+                    timeout=PROBE_TIMEOUT,
+                    headers=headers,
+                )
         except requests.RequestException:
             # We know the control page exists, but cannot confirm login
             payload = {

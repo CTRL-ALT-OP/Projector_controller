@@ -3,6 +3,7 @@ import math
 import requests
 import json
 import importlib
+from requests.auth import HTTPDigestAuth
 
 
 class Projector:
@@ -19,19 +20,61 @@ class Projector:
         password = self._password_override or defaults["password"]
         return user, password
 
-    def generate_command(self, command):
-        command = self.projector_lib.commands[command]
-        user, password = self._credentials()
-        url = f"http://{user}:{password}@{self.ip}{command['path']}"
-        for param in command["params"]:
-            key = param[0]
-            value = param[1]
+    def _format_headers(self):
+        headers = getattr(self.projector_lib, "req_headers", {}) or {}
+        return {
+            key: value.format(ip=self.ip) if isinstance(value, str) else value
+            for key, value in headers.items()
+        }
+
+    def _resolved_command_params(self, command):
+        params = []
+        for key, value in command["params"]:
             if value == "$$time":
                 value = self.projector_lib.time()
-            url += (
-                key + command["default_kvjoiner"] + value + command["default_kjoiner"]
+            params.append((key, value))
+        return params
+
+    def _command_auth_mode(self):
+        return getattr(self.projector_lib, "auth_mode", "url_credentials")
+
+    def _generate_command_digest(self, command_name):
+        command = self.projector_lib.commands[command_name]
+        url = f"http://{self.ip}{command['path']}"
+        params = self._resolved_command_params(command)
+
+        # Structured params/data are only safe for standard key/value joiners.
+        standard_encoding = (
+            command["default_kvjoiner"] == "=" and command["default_kjoiner"] == "&"
+        )
+        if not standard_encoding:
+            suffix = ""
+            for key, value in params:
+                suffix += (
+                    key
+                    + command["default_kvjoiner"]
+                    + value
+                    + command["default_kjoiner"]
+                )
+            url += suffix.rstrip(command["default_kjoiner"])
+            params = None
+
+        return url, command["mode"], command["duplicate"], params
+
+    def _generate_command_legacy(self, command_name):
+        command = self.projector_lib.commands[command_name]
+        user, password = self._credentials()
+        url = f"http://{user}:{password}@{self.ip}{command['path']}"
+        suffix = "".join(
+            (
+                key
+                + command["default_kvjoiner"]
+                + value
+                + command["default_kjoiner"]
             )
-        url = url.strip(command["default_kjoiner"])
+            for key, value in self._resolved_command_params(command)
+        )
+        url += suffix.rstrip(command["default_kjoiner"])
         return url, command["mode"], command["duplicate"]
 
     def _execute_command(self, command_name):
@@ -44,19 +87,59 @@ class Projector:
         performing any HTTP requests.
         """
         # Allow a projector module to fully override command execution.
-        print(command_name)
         handler = getattr(self.projector_lib, "handle_command", None)
         if callable(handler):
             return handler(command_name, self)
 
-        url, mode, duplicate = self.generate_command(command_name)
+        timeout = getattr(self.projector_lib, "request_timeout", None)
+        auth_mode = self._command_auth_mode()
 
+        if auth_mode == "digest":
+            url, mode, duplicate, params = self._generate_command_digest(command_name)
+            user, password = self._credentials()
+            headers = self._format_headers()
+            session = requests.Session()
+            session.auth = HTTPDigestAuth(user, password)
+
+            # Prime digest challenge and any remote-control session state.
+            control_url = f"http://{self.ip}{self.projector_lib.control_page}"
+            prime_kwargs = {"headers": headers}
+            if timeout is not None:
+                prime_kwargs["timeout"] = timeout
+            session.get(control_url, **prime_kwargs)
+
+            caller = session.get if mode == "get" else session.post
+            request_kwargs = {"headers": headers}
+            if timeout is not None:
+                request_kwargs["timeout"] = timeout
+            if params is not None:
+                payload_key = "params" if mode == "get" else "data"
+                request_kwargs[payload_key] = params
+            response = caller(url, **request_kwargs)
+            if duplicate:
+                time.sleep(0.5)
+                url, _, _, params = self._generate_command_digest(command_name)
+                request_kwargs = {"headers": headers}
+                if timeout is not None:
+                    request_kwargs["timeout"] = timeout
+                if params is not None:
+                    payload_key = "params" if mode == "get" else "data"
+                    request_kwargs[payload_key] = params
+                response = caller(url, **request_kwargs)
+            return response
+
+        # Legacy transport path preserves original behavior for existing modules.
+        url, mode, duplicate = self._generate_command_legacy(command_name)
         caller = requests.get if mode == "get" else requests.post
-        response = caller(url, headers=self.projector_lib.req_headers)
+        headers = getattr(self.projector_lib, "req_headers", {})
+        request_kwargs = {"headers": headers}
+        if timeout is not None:
+            request_kwargs["timeout"] = timeout
+        response = caller(url, **request_kwargs)
         if duplicate:
             time.sleep(0.5)
-            url, _, _ = self.generate_command(command_name)
-            response = caller(url, headers=self.projector_lib.req_headers)
+            url, _, _ = self._generate_command_legacy(command_name)
+            response = caller(url, **request_kwargs)
         return response
 
     def on(self):
@@ -120,7 +203,6 @@ class Projector:
             for _ in range(max_attempts):
                 # Re-check current source each loop; bail early if we've reached target
                 current = self.source()
-                print(current, target_source)
                 if current.lower() == target_source.lower():
                     return True
                 self._execute_command(cycle_cmd)
@@ -152,13 +234,11 @@ def determine(ip):
         if x.status_code in {401, 200}:
             return "Cristie"
         elif x.status_code == 404:
-            x = requests.get(
-                f"http://{ip}/cgi-bin/webconf", headers=headers, timeout=0.5
-            )
+            x = requests.get(f"http://{ip}/cgi-bin/webconf", timeout=0.5)
             if x.status_code in {401, 200}:
                 return "Epson"
         return None
-    except Exception as e:
+    except Exception:
         return None
 
 
