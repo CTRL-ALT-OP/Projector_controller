@@ -12,6 +12,9 @@ control_page = "/cgi-bin/Remote/Basic_Control"
 request_timeout = 3
 status_callback = "PWSTATUS?"
 source_page = "103"
+source_request_attempts = 4
+source_retry_delay = 0.2
+_last_source_by_ip = {}
 
 req_headers = {
     "Referer": "http://{ip}/cgi-bin/Remote/Basic_Control",
@@ -132,21 +135,20 @@ def request_status(user, password, ip):
 
 
 def request_source(user, password, ip):
-    full_url = f"https://{ip}/cgi-bin/webconf"
-    try:
-        _disable_ssl_warnings()
-        response = requests.post(
-            full_url,
-            data={"page": source_page},
-            auth=HTTPDigestAuth(user, password),
-            headers=_web_control_headers(ip),
-            timeout=request_timeout,
-            verify=False,
-        )
-        response.raise_for_status()
-        return _webconf_source(response.text)
-    except requests.exceptions.RequestException:
-        return None
+    for attempt in range(source_request_attempts):
+        try:
+            source = _request_source_once(user, password, ip)
+        except requests.exceptions.RequestException:
+            source = None
+
+        if source:
+            _last_source_by_ip[ip] = source
+            return source
+
+        if attempt < source_request_attempts - 1:
+            root_time.sleep(source_retry_delay)
+
+    return _last_source_by_ip.get(ip)
 
 
 def time():
@@ -192,6 +194,20 @@ def _json_query(user, password, ip, callback):
     )
     response.raise_for_status()
     return response.json()
+
+
+def _request_source_once(user, password, ip):
+    _disable_ssl_warnings()
+    response = requests.post(
+        f"https://{ip}/cgi-bin/webconf",
+        data={"page": source_page},
+        auth=HTTPDigestAuth(user, password),
+        headers=_web_control_headers(ip),
+        timeout=request_timeout,
+        verify=False,
+    )
+    response.raise_for_status()
+    return _webconf_source(response.text)
 
 
 def _feature_reply(payload):
